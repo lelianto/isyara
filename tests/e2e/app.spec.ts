@@ -166,6 +166,35 @@ test('sequential signs A through F commit ABCDEF in a single camera session',asy
  await expect(page.getByRole('textbox',{name:'HASIL EJAAN'})).toHaveValue('ABCDEF',{timeout:20000});
  await page.getByRole('button',{name:'Hentikan kamera'}).click();
 });
+test('sequential signs G through Z commit GHIJKLMNOPQRSTUVWXYZ in a single camera session',async({page})=>{
+ test.setTimeout(90000);
+ const letters='GHIJKLMNOPQRSTUVWXYZ'.split('');
+ await page.addInitScript(({letters})=>{
+  Object.defineProperty(navigator,'mediaDevices',{value:{enumerateDevices:()=>Promise.resolve([]),getUserMedia:async()=>{
+   const imgs:Record<string,HTMLImageElement>={};
+   for(const l of letters){const img=new Image();img.src=`/ref/${l}/${l.toLowerCase()}_da7115.jpg`;await img.decode();imgs[l]=img}
+   const canvas=document.createElement('canvas');canvas.width=640;canvas.height=480;
+   const ctx=canvas.getContext('2d')!;let current=letters[0];
+   const draw=()=>{
+    const img=imgs[current];ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);
+    const scale=Math.min(canvas.width/img.width,canvas.height/img.height);
+    ctx.drawImage(img,(canvas.width-img.width*scale)/2,(canvas.height-img.height*scale)/2,img.width*scale,img.height*scale);
+   };
+   (window as any).__setSignLetter=(l:string)=>{current=l;draw()};
+   draw();const stream=canvas.captureStream(15);
+   const timer=setInterval(draw,66),track=stream.getVideoTracks()[0],stop=track.stop.bind(track);
+   track.stop=()=>{clearInterval(timer);stop()};return stream;
+  }}});
+ },{letters});
+ await page.goto('/');await page.getByRole('button',{name:'Nyalakan kamera'}).click();
+ let expected='';
+ for(const l of letters){
+  if(expected)await page.evaluate((next)=>(window as any).__setSignLetter(next),l);
+  expected+=l;
+  await expect(page.getByRole('textbox',{name:'HASIL EJAAN'})).toHaveValue(expected,{timeout:20000});
+ }
+ await page.getByRole('button',{name:'Hentikan kamera'}).click();
+});
 test('Bhasantara integration translates spelled text across regional languages and transliterates to Aksara Nusantara',async({page})=>{
  await page.goto('/');
  await page.getByRole('button',{name:'+ TERIMA KASIH'}).click();

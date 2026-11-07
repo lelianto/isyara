@@ -139,6 +139,32 @@ describe('missing-hand recovery',()=>{
   expect(outMirr.prediction?.label).toBe('F');
   expect(outMirr.prediction?.confidence).toBeGreaterThanOrEqual(MIN_SCORE);
  });
+ it('recognizes all 26 letters A through Z across unmirrored, mirrored, and live-perturbed poses',()=>{
+  const model:TwoHandModel=JSON.parse(readFileSync('public/models/twohand-v1/model.json','utf8'));
+  for(const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')){
+   const sample=model.samples.find(s=>s.label===letter)!;
+   expect(sample).toBeDefined();
+   const outOrig=classify(model,sample.features,sample.handCount);
+   expect(outOrig.prediction?.label).toBe(letter);
+   expect(outOrig.prediction?.confidence).toBeGreaterThanOrEqual(MIN_SCORE);
+   const outMirr=classify(model,mirrorFeatures(sample.features,sample.handCount),sample.handCount);
+   expect(outMirr.prediction?.label).toBe(letter);
+   expect(outMirr.prediction?.confidence).toBeGreaterThanOrEqual(MIN_SCORE);
+   const perturbed=[...sample.features];
+   const rad=(5*Math.PI)/180,cos=Math.cos(rad),sin=Math.sin(rad);
+   for(let pt=0;pt<21;pt++){
+    const i=pt*3,x=perturbed[i],y=perturbed[i+1];
+    perturbed[i]=x*cos-y*sin;perturbed[i+1]=x*sin+y*cos;
+    if(sample.handCount===2){
+     perturbed[63+i]+=0.05;perturbed[63+i+1]+=0.02;
+     perturbed[189+i]-=0.05;perturbed[189+i+1]-=0.02;
+    }
+   }
+   const outPerturbed=classify(model,perturbed,sample.handCount);
+   expect(outPerturbed.prediction?.label).toBe(letter);
+   expect(outPerturbed.prediction?.confidence).toBeGreaterThanOrEqual(MIN_SCORE);
+  }
+ });
 });
 
 import{regionalLanguages,translateSpelledText,latinToJavaneseScriptLocal,latinToSundaneseScriptLocal,latinToBalineseScriptLocal,aksaraToLatinLocal,detectRegionalLanguageLocal,analyzeCulturalLiteracy,suggestWords,aksaraGuideData}from'../src/language';
