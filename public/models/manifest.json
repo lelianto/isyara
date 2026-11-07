@@ -33,7 +33,7 @@
     },
     {
       "path": "models/twohand-v1/evaluation.json",
-      "sha256": "50c3d67b5c72aabe3c946a4383583827d9ec5b14e8f9590dab30f11aeeb272a5"
+      "sha256": "59d05394e06d7b4a7d2e752fd796058224df12268f13340340f92377088aa88c"
     },
     {
       "path": "models/hand_landmarker.task",
